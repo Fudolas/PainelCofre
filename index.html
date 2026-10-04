@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Cofre · Painel</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #0b1220; color: #e5e7eb; }
+  main { max-width: 640px; margin: 0 auto; padding: 20px; }
+  h1 { font-size: 1.5rem; }
+  .cartao { background: #16213a; border-radius: 16px; padding: 16px; margin: 12px 0; }
+  label { display: block; font-size: .9rem; color: #9ca3af; }
+  input { width: 100%; box-sizing: border-box; padding: 12px; margin: 6px 0 12px; border-radius: 10px; border: 1px solid #334155; background: #0b1220; color: #e5e7eb; font-size: 1rem; }
+  button { padding: 12px 16px; margin: 4px 8px 4px 0; border: 0; border-radius: 10px; background: #4ade80; color: #052e16; font-weight: 600; font-size: 1rem; }
+  button.sec { background: #1e3a5f; color: #e5e7eb; }
+  button.perigo { background: #f87171; color: #450a0a; }
+  button:disabled { opacity: .5; }
+  .aviso { color: #fbbf24; } .erro { color: #f87171; } .ok { color: #4ade80; }
+  .mono { font-family: ui-monospace, monospace; word-break: break-all; }
+  small { color: #9ca3af; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import {
+  getAuth, setPersistence, browserSessionPersistence, signInWithEmailAndPassword, signOut,
+  onAuthStateChanged, getMultiFactorResolver, multiFactor, TotpMultiFactorGenerator,
+  sendEmailVerification, reload
+} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import {
+  getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBtufw1kTj6b-8zurdBFtbdVuMGOCCOsxs",
+  authDomain: "cofre-f8dc5.firebaseapp.com",
+  projectId: "cofre-f8dc5",
+  appId: "1:1055406605843:web:e7ec607be53ff93e58a1e6"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+await setPersistence(auth, browserSessionPersistence);
+
+const raiz = document.getElementById("app");
+let resolver = null;
+let ocioso = null;
+
+function h(tag, props = {}, ...filhos) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") el.className = v;
+    else el.setAttribute(k, v);
+  }
+  for (const f of filhos) el.append(f);
+  return el;
+}
+
+function mostrar(...nos) {
+  raiz.replaceChildren(...nos);
+}
+
+function reiniciarOcioso() {
+  clearTimeout(ocioso);
+  ocioso = setTimeout(() => signOut(auth), 5 * 60 * 1000);
+}
+["click", "keydown", "touchstart"].forEach((ev) => addEventListener(ev, () => {
+  if (auth.currentUser) reiniciarOcioso();
+}));
+
+function telaLogin(mensagem) {
+  const email = h("input", { type: "email", autocomplete: "username" });
+  const senha = h("input", { type: "password", autocomplete: "current-password" });
+  const aviso = h("p", { class: "erro" }, mensagem || "");
+  const botao = h("button", {}, "Entrar");
+  botao.onclick = async () => {
+    botao.disabled = true;
+    try {
+      await signInWithEmailAndPassword(auth, email.value.trim(), senha.value);
+    } catch (e) {
+      if (e.code === "auth/multi-factor-auth-required") {
+        resolver = getMultiFactorResolver(auth, e);
+        telaSegundoFator("");
+        return;
+      }
+      aviso.textContent = "Não foi possível entrar. Confira e-mail e senha.";
+      botao.disabled = false;
+    }
+  };
+  mostrar(
+    h("h1", {}, "Cofre · Painel"),
+    h("div", { class: "cartao" },
+      h("label", {}, "E-mail"), email,
+      h("label", {}, "Senha"), senha,
+      botao, aviso)
+  );
+}
+
+function telaSegundoFator(mensagem) {
+  const codigo = h("input", { inputmode: "numeric", autocomplete: "one-time-code", maxlength: "6" });
+  const aviso = h("p", { class: "erro" }, mensagem || "");
+  const botao = h("button", {}, "Confirmar");
+  const voltar = h("button", { class: "sec" }, "Voltar");
+  botao.onclick = async () => {
+    const dica = resolver.hints.find((x) => x.factorId === TotpMultiFactorGenerator.FACTOR_ID);
+    if (!dica) {
+      aviso.textContent = "Nenhum autenticador cadastrado.";
+      return;
+    }
+    try {
+      const prova = TotpMultiFactorGenerator.assertionForSignIn(dica.uid, codigo.value.trim());
+      await resolver.resolveSignIn(prova);
+      resolver = null;
+    } catch (e) {
+      aviso.textContent = "Código inválido ou expirado.";
+    }
+  };
+  voltar.onclick = () => {
+    resolver = null;
+    telaLogin("");
+  };
+  mostrar(
+    h("h1", {}, "Segundo fator"),
+    h("div", { class: "cartao" },
+      h("label", {}, "Código de 6 dígitos do app autenticador"), codigo,
+      botao, voltar, aviso)
+  );
+}
+
+async function decidirTela(user) {
+  const token = await user.getIdTokenResult(true);
+  const comSegundoFator = !!(token.claims.firebase && token.claims.firebase.sign_in_second_factor);
+  const fatores = multiFactor(user).enrolledFactors;
+  if (fatores.length === 0) return telaCadastroTotp(user, "");
+  if (!comSegundoFator) {
+    await signOut(auth);
+    return telaLogin("Sessão sem segundo fator. Entre de novo.");
+  }
+  telaPainel(user);
+}
+
+async function telaCadastroTotp(user, mensagem) {
+  if (!user.emailVerified) {
+    const aviso = h("p", { class: "aviso" }, mensagem || "");
+    const enviar = h("button", {}, "Enviar e-mail de verificação");
+    const pronto = h("button", { class: "sec" }, "Já verifiquei");
+    enviar.onclick = async () => {
+      try {
+        await sendEmailVerification(user);
+        aviso.textContent = "E-mail enviado. Abra o link e depois toque em Já verifiquei.";
+      } catch (e) {
+        aviso.textContent = "Não foi possível enviar agora. Tente mais tarde.";
+      }
+    };
+    pronto.onclick = async () => {
+      await reload(user);
+      await decidirTela(auth.currentUser);
+    };
+    mostrar(
+      h("h1", {}, "Verifique seu e-mail"),
+      h("div", { class: "cartao" },
+        h("p", {}, "O segundo fator exige o e-mail verificado."),
+        enviar, pronto, aviso)
+    );
+    return;
+  }
+
+  let segredo;
+  try {
+    const sessao = await multiFactor(user).getSession();
+    segredo = await TotpMultiFactorGenerator.generateSecret(sessao);
+  } catch (e) {
+    mostrar(
+      h("h1", {}, "Cadastro do autenticador"),
+      h("p", { class: "erro" }, "Não foi possível iniciar o cadastro. O TOTP foi ativado no projeto? (Parte A, passo 5)")
+    );
+    return;
+  }
+  const uri = segredo.generateQrCodeUrl(user.email, "Cofre");
+  const codigo = h("input", { inputmode: "numeric", autocomplete: "one-time-code", maxlength: "6" });
+  const aviso = h("p", { class: "erro" }, mensagem || "");
+  const botao = h("button", {}, "Confirmar e cadastrar");
+  botao.onclick = async () => {
+    try {
+      const prova = TotpMultiFactorGenerator.assertionForEnrollment(segredo, codigo.value.trim());
+      await multiFactor(user).enroll(prova, "Autenticador");
+      await signOut(auth);
+      telaLogin("Autenticador cadastrado. Entre de novo, agora com o código.");
+    } catch (e) {
+      aviso.textContent = "Código inválido. Confira a chave no autenticador e tente de novo.";
+    }
+  };
+  const link = h("a", { href: uri, style: "color:#4ade80" }, "Abrir no app autenticador");
+  mostrar(
+    h("h1", {}, "Cadastrar autenticador"),
+    h("div", { class: "cartao" },
+      h("p", {}, "1. Abra um app autenticador (Google Authenticator, Aegis, etc.)."),
+      h("p", {}, "2. Adicione uma conta digitando esta chave:"),
+      h("p", { class: "mono ok" }, segredo.secretKey),
+      h("p", {}, link),
+      h("p", {}, "3. Digite o código de 6 dígitos que o app mostrar:"),
+      codigo, botao, aviso)
+  );
+}
+
+function telaPainel(user) {
+  const aviso = h("p", {}, "");
+  const caixa = h("div", {});
+  const codigo = h("input", { autocomplete: "off", placeholder: "ABCD-EFGH" });
+  const vincular = h("button", {}, "Vincular aparelho");
+  const sair = h("button", { class: "sec" }, "Sair");
+
+  vincular.onclick = async () => {
+    const c = codigo.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    aviso.className = "erro";
+    if (c.length !== 8) {
+      aviso.textContent = "O código tem 8 caracteres.";
+      return;
+    }
+    try {
+      const ref = doc(db, "pareamentos", c);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        aviso.textContent = "Código não encontrado.";
+        return;
+      }
+      const d = snap.data();
+      const idade = Date.now() - d.criadoEm.toMillis();
+      if (idade > 10 * 60 * 1000) {
+        await deleteDoc(ref);
+        aviso.textContent = "Código expirado. Gere outro no app.";
+        return;
+      }
+      await setDoc(doc(db, "dispositivos", d.deviceUid), {
+        donoUid: user.uid,
+        nome: String(d.nome || "Aparelho").slice(0, 60),
+        vinculadoEm: serverTimestamp()
+      });
+      await deleteDoc(ref);
+      codigo.value = "";
+      aviso.className = "ok";
+      aviso.textContent = "Aparelho vinculado.";
+      carregarLista(caixa);
+    } catch (e) {
+      aviso.textContent = "Falha ao vincular. Confira as regras do Firestore.";
+    }
+  };
+  sair.onclick = () => signOut(auth);
+
+  mostrar(
+    h("h1", {}, "Painel do Cofre"),
+    h("div", { class: "cartao" },
+      h("small", {}, "Conta: " + user.email),
+      h("br"),
+      h("small", { class: "mono" }, "UID: " + user.uid),
+      h("br"),
+      sair),
+    h("div", { class: "cartao" },
+      h("strong", {}, "Vincular aparelho"),
+      h("label", {}, "Código mostrado no app (Segurança → Painel remoto)"),
+      codigo, vincular, aviso),
+    h("h2", {}, "Aparelhos"),
+    caixa
+  );
+  carregarLista(caixa);
+}
+
+async function carregarLista(caixa) {
+  caixa.replaceChildren(h("small", {}, "Carregando…"));
+  try {
+    const snap = await getDocs(collection(db, "dispositivos"));
+    if (snap.empty) {
+      caixa.replaceChildren(h("small", {}, "Nenhum aparelho vinculado."));
+      return;
+    }
+    const itens = [];
+    for (const d of snap.docs) {
+      const dados = d.data();
+      let contato = "sem registro";
+      try {
+        const est = await getDoc(doc(db, "dispositivos", d.id, "estado", "atual"));
+        if (est.exists() && est.data().ultimoContato) {
+          contato = est.data().ultimoContato.toDate().toLocaleString("pt-BR");
+        }
+      } catch (e) {
+        contato = "indisponível";
+      }
+      const remover = h("button", { class: "perigo" }, "Remover");
+      remover.onclick = async () => {
+        if (!confirm("Remover este aparelho do painel?")) return;
+        try { await deleteDoc(doc(db, "dispositivos", d.id, "estado", "atual")); } catch (e) {}
+        await deleteDoc(doc(db, "dispositivos", d.id));
+        carregarLista(caixa);
+      };
+      itens.push(
+        h("div", { class: "cartao" },
+          h("strong", {}, dados.nome || "Aparelho"),
+          h("div", {}, h("small", {}, "ID " + d.id.slice(0, 8) + " · último contato: " + contato)),
+          remover)
+      );
+    }
+    caixa.replaceChildren(...itens);
+  } catch (e) {
+    caixa.replaceChildren(h("p", { class: "erro" }, "Não foi possível carregar. Confira as regras do Firestore."));
+  }
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    clearTimeout(ocioso);
+    if (!resolver) telaLogin("");
+    return;
+  }
+  reiniciarOcioso();
+  await decidirTela(user);
+});
+</script>
+</body>
+</html>
