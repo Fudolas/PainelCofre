@@ -4,26 +4,110 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Cofre · Painel</title>
+<title>cofre · Painel</title>
 <style>
-  :root { color-scheme: dark; }
-  body { margin: 0; font-family: system-ui, sans-serif; background: #0b1220; color: #e5e7eb; }
-  main { max-width: 640px; margin: 0 auto; padding: 20px; }
-  h1 { font-size: 1.5rem; }
-  .cartao { background: #16213a; border-radius: 16px; padding: 16px; margin: 12px 0; }
-  label { display: block; font-size: .9rem; color: #9ca3af; }
-  input { width: 100%; box-sizing: border-box; padding: 12px; margin: 6px 0 12px; border-radius: 10px; border: 1px solid #334155; background: #0b1220; color: #e5e7eb; font-size: 1rem; }
-  button { padding: 12px 16px; margin: 4px 8px 4px 0; border: 0; border-radius: 10px; background: #4ade80; color: #052e16; font-weight: 600; font-size: 1rem; }
-  button.sec { background: #1e3a5f; color: #e5e7eb; }
-  button.perigo { background: #f87171; color: #450a0a; }
-  button:disabled { opacity: .5; }
-  .aviso { color: #fbbf24; } .erro { color: #f87171; } .ok { color: #4ade80; }
+  :root {
+    color-scheme: dark;
+    --fundo: #050b18; --sup: #0b1630; --lateral: #070f22; --borda: #1c3a6e;
+    --azul: #2f7bff; --verde: #22c55e; --alerta: #f59e0b; --perigo: #ef4444;
+    --texto: #e8eeff; --muted: #8fa3c8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: radial-gradient(1200px 600px at 70% -10%, #0c2350 0%, var(--fundo) 60%);
+  }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  h2 { font-size: 1.1rem; margin: 22px 0 10px; }
+  p { margin: 6px 0; }
+  .muted { color: var(--muted); }
+  .erro { color: var(--perigo); } .ok { color: var(--verde); } .aviso { color: var(--alerta); }
   .mono { font-family: ui-monospace, monospace; word-break: break-all; }
-  small { color: #9ca3af; }
+  small { font-size: .82rem; }
+
+  .app { display: flex; min-height: 100vh; }
+  .lateral {
+    width: 232px; flex-shrink: 0; background: var(--lateral);
+    border-right: 1px solid var(--borda); padding: 20px 14px;
+    position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 6px;
+  }
+  .marca { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.2rem; margin-bottom: 14px; }
+  .nav {
+    text-align: left; padding: 12px 14px; border: 0; border-radius: 12px; cursor: pointer;
+    background: transparent; color: var(--muted); font: inherit; font-weight: 600;
+  }
+  .nav:hover { background: rgba(47, 123, 255, .12); color: var(--texto); }
+  .nav.ativo { background: var(--azul); color: #fff; }
+  .espaco { flex: 1; }
+  .conta { color: var(--muted); word-break: break-all; padding: 0 6px; }
+  .principal { flex: 1; padding: 26px; max-width: 980px; min-width: 0; }
+
+  .cartao {
+    background: var(--sup); border: 1px solid var(--borda); border-radius: 18px;
+    padding: 16px; margin: 12px 0;
+  }
+  .cartao.interno { background: #08112a; }
+  .hero { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .topo { display: flex; align-items: center; gap: 12px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .stats .cartao { margin: 0; }
+  .stat-valor { font-size: 1.35rem; font-weight: 700; margin-top: 4px; }
+
+  label { display: block; font-size: .88rem; color: var(--muted); }
+  input {
+    width: 100%; padding: 12px; margin: 6px 0 12px; border-radius: 12px;
+    border: 1px solid var(--borda); background: var(--fundo); color: var(--texto); font-size: 1rem;
+  }
+  input:focus { outline: 2px solid var(--azul); }
+
+  button { font: inherit; cursor: pointer; }
+  .btn {
+    padding: 12px 18px; margin: 4px 8px 4px 0; border: 0; border-radius: 12px;
+    background: var(--azul); color: #fff; font-weight: 700;
+  }
+  .btn.sec { background: #123a7a; }
+  .btn.perigo { background: var(--perigo); color: #fff; }
+  .btn:disabled { opacity: .5; }
+
+  .grade { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 12px 0; }
+  .acao {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    padding: 16px 10px; border-radius: 16px; border: 1px solid var(--borda);
+    background: var(--sup); color: var(--texto); font-weight: 600; font-size: .95rem;
+  }
+  .acao span { font-size: 1.5rem; }
+  .acao:hover { border-color: var(--azul); background: #0e1d3d; }
+  .acao.perigo { grid-column: 1 / -1; color: #fecaca; border-color: #7f1d1d; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+  .chip, .selo {
+    display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600;
+  }
+  .chip.verde, .selo.verde { background: rgba(34, 197, 94, .16); color: var(--verde); }
+  .chip.alerta, .selo.alerta { background: rgba(245, 158, 11, .16); color: var(--alerta); }
+  .chip.azul, .selo.azul { background: rgba(47, 123, 255, .18); color: #8db8ff; }
+  .selo.perigo { background: rgba(239, 68, 68, .16); color: var(--perigo); }
+  .linha { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .status { min-height: 1.2em; }
+  .login { max-width: 420px; margin: 8vh auto; padding: 20px; text-align: center; }
+  .login .cartao { text-align: left; }
+
+  @media (max-width: 860px) {
+    .app { flex-direction: column; }
+    .lateral {
+      width: auto; height: auto; position: static; flex-direction: row; flex-wrap: wrap;
+      align-items: center; border-right: 0; border-bottom: 1px solid var(--borda); padding: 12px;
+    }
+    .marca { width: 100%; margin-bottom: 4px; }
+    .espaco { display: none; }
+    .conta { width: 100%; order: 10; }
+    .principal { padding: 16px; }
+  }
 </style>
 </head>
 <body>
-<main id="app"></main>
+<div id="app"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import {
@@ -32,14 +116,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 import {
   getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc,
-  onSnapshot, serverTimestamp
+  onSnapshot, serverTimestamp, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBtufw1kTj6b-8zurdBFtbdVuMGOCCOsxs",
-  authDomain: "cofre-f8dc5.firebaseapp.com",
-  projectId: "cofre-f8dc5",
-  appId: "1:1055406605843:web:e7ec607be53ff93e58a1e6"
+  apiKey: "COLE_AQUI",
+  authDomain: "COLE_AQUI",
+  projectId: "COLE_AQUI",
+  appId: "COLE_AQUI"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -49,6 +133,22 @@ await setPersistence(auth, browserSessionPersistence);
 
 const raiz = document.getElementById("app");
 let ocioso = null;
+let secao = "inicio";
+let contadorRender = 0;
+
+const ROTULOS = {
+  bloquear: "Bloquear cofre",
+  encerrar: "Encerrar sessões",
+  localizar: "Localizar",
+  pedir_backup: "Pedir backup",
+  apagar: "Apagar aparelho"
+};
+const NAV = [
+  ["inicio", "Início"],
+  ["aparelhos", "Aparelhos"],
+  ["vincular", "Vincular"],
+  ["atividade", "Atividade"]
+];
 
 function h(tag, props = {}, ...filhos) {
   const el = document.createElement(tag);
@@ -60,8 +160,26 @@ function h(tag, props = {}, ...filhos) {
   return el;
 }
 
-function mostrar(...nos) {
-  raiz.replaceChildren(...nos);
+function s(tag, attrs = {}, ...filhos) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  for (const f of filhos) el.append(f);
+  return el;
+}
+
+function iconeEscudo(tamanho, cor = "#2f7bff") {
+  const id = "g" + Math.random().toString(36).slice(2, 8);
+  return s("svg", { viewBox: "0 0 100 120", width: String(tamanho), height: String(Math.round(tamanho * 1.2)) },
+    s("defs", {},
+      s("linearGradient", { id, x1: "0", y1: "0", x2: "0", y2: "1" },
+        s("stop", { offset: "0", "stop-color": cor, "stop-opacity": "0.55" }),
+        s("stop", { offset: "1", "stop-color": cor, "stop-opacity": "0.1" }))),
+    s("path", {
+      d: "M50 4 L90 18 V58 C90 88 70 108 50 116 C30 108 10 88 10 58 V18 Z",
+      fill: "url(#" + id + ")", stroke: cor, "stroke-width": "4"
+    }),
+    s("rect", { x: "36", y: "54", width: "28", height: "22", rx: "4", fill: "#fff" }),
+    s("path", { d: "M42 54 V47 a8 8 0 0 1 16 0 V54", stroke: "#fff", "stroke-width": "5", fill: "none" }));
 }
 
 function reiniciarOcioso() {
@@ -72,11 +190,42 @@ function reiniciarOcioso() {
   if (auth.currentUser) reiniciarOcioso();
 }));
 
+function ms(ts) {
+  return ts && ts.toMillis ? ts.toMillis() : 0;
+}
+
+function quando(ts) {
+  return ts && ts.toDate ? ts.toDate().toLocaleString("pt-BR") : "sem registro";
+}
+
+function chip(texto, cor) {
+  return h("span", { class: "chip " + cor }, texto);
+}
+
+function seloStatus(status) {
+  const mapa = {
+    executado: ["Sucesso", "verde"],
+    pendente: ["Pendente", "azul"],
+    recusado: ["Recusado", "alerta"],
+    falhou: ["Falhou", "perigo"],
+    expirado: ["Expirado", "alerta"]
+  };
+  const [texto, cor] = mapa[status] || [String(status), "azul"];
+  return h("span", { class: "selo " + cor }, texto);
+}
+
+function resumo(resultado) {
+  const r = String(resultado);
+  return r.startsWith("loc:") ? "localização recebida" : r.slice(0, 80);
+}
+
+/* ---------- Login ---------- */
+
 function telaLogin(mensagem) {
   const email = h("input", { type: "email", autocomplete: "username" });
   const senha = h("input", { type: "password", autocomplete: "current-password" });
   const aviso = h("p", { class: "erro" }, mensagem || "");
-  const botao = h("button", {}, "Entrar");
+  const botao = h("button", { class: "btn" }, "Entrar");
   botao.onclick = async () => {
     botao.disabled = true;
     try {
@@ -86,18 +235,61 @@ function telaLogin(mensagem) {
       botao.disabled = false;
     }
   };
-  mostrar(
-    h("h1", {}, "Cofre · Painel"),
-    h("div", { class: "cartao" },
-      h("label", {}, "E-mail"), email,
-      h("label", {}, "Senha"), senha,
-      botao, aviso)
+  raiz.replaceChildren(
+    h("div", { class: "login" },
+      iconeEscudo(72),
+      h("h1", {}, "cofre"),
+      h("p", { class: "muted" }, "Painel de gerenciamento remoto"),
+      h("div", { class: "cartao" },
+        h("label", {}, "E-mail"), email,
+        h("label", {}, "Senha"), senha,
+        botao, aviso))
   );
 }
 
-function quando(ts) {
-  return ts && ts.toDate ? ts.toDate().toLocaleString("pt-BR") : "sem registro";
+/* ---------- Estrutura ---------- */
+
+function moldura(user, atual, conteudo) {
+  const botoes = NAV.map(([id, nome]) => {
+    const b = h("button", { class: "nav" + (id === atual ? " ativo" : "") }, nome);
+    b.onclick = () => {
+      secao = id;
+      render(auth.currentUser);
+    };
+    return b;
+  });
+  const sair = h("button", { class: "nav" }, "Sair");
+  sair.onclick = () => signOut(auth);
+  const lateral = h("nav", { class: "lateral" },
+    h("div", { class: "marca" }, iconeEscudo(26), h("span", {}, "cofre")),
+    ...botoes,
+    h("div", { class: "espaco" }),
+    h("small", { class: "conta" }, user.email),
+    sair);
+  const principal = h("main", { class: "principal" }, conteudo);
+  raiz.replaceChildren(h("div", { class: "app" }, lateral, principal));
+  return principal;
 }
+
+async function render(user) {
+  const meu = ++contadorRender;
+  const principal = moldura(user, secao, h("p", { class: "muted" }, "Carregando…"));
+  try {
+    let no;
+    if (secao === "inicio") no = await telaInicio();
+    else if (secao === "aparelhos") no = await telaAparelhos();
+    else if (secao === "vincular") no = telaVincular(user);
+    else no = await telaAtividade();
+    if (meu === contadorRender) principal.replaceChildren(no);
+  } catch (e) {
+    if (meu === contadorRender) {
+      principal.replaceChildren(
+        h("p", { class: "erro" }, "Não foi possível carregar. Confira as regras do Firestore."));
+    }
+  }
+}
+
+/* ---------- Dados ---------- */
 
 async function lerEstado(id) {
   try {
@@ -107,6 +299,17 @@ async function lerEstado(id) {
     return {};
   }
 }
+
+async function carregarAparelhos() {
+  const snap = await getDocs(collection(db, "dispositivos"));
+  const lista = [];
+  for (const d of snap.docs) {
+    lista.push({ id: d.id, nome: d.data().nome || "Aparelho", estado: await lerEstado(d.id) });
+  }
+  return lista;
+}
+
+/* ---------- Comandos ---------- */
 
 function hex(bytes) {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
@@ -127,7 +330,7 @@ async function calcularProva(senha, saltB64, desafio, idComando) {
 
 function mostrarResultado(c, status) {
   status.replaceChildren();
-  status.className = c.status === "executado" ? "ok" : "erro";
+  status.className = "status " + (c.status === "executado" ? "ok" : "erro");
   const r = String(c.resultado || c.status);
   if (c.status === "executado" && r.startsWith("loc:")) {
     const [lat, lng, prec, min] = r.slice(4).split(",").map(Number);
@@ -136,7 +339,7 @@ function mostrarResultado(c, status) {
         href: "https://www.google.com/maps?q=" + lat + "," + lng,
         target: "_blank",
         rel: "noopener noreferrer",
-        style: "color:#4ade80"
+        style: "color:#8db8ff"
       }, "Abrir no mapa");
       status.append("Localização (precisão ~" + prec + " m, há " + min + " min): ", link);
       return;
@@ -146,7 +349,7 @@ function mostrarResultado(c, status) {
 }
 
 function acompanhar(ref, status) {
-  status.className = "aviso";
+  status.className = "status aviso";
   status.textContent = "Comando enviado. Aguardando o aparelho…";
   let temporizador = null;
   let parar = () => {};
@@ -159,7 +362,7 @@ function acompanhar(ref, status) {
   });
   temporizador = setTimeout(() => {
     parar();
-    status.className = "erro";
+    status.className = "status erro";
     status.textContent = "Sem resposta. O aparelho está ligado, com internet e recebendo comandos?";
   }, 120000);
 }
@@ -170,34 +373,72 @@ async function enviar(deviceId, tipo, status) {
     await setDoc(ref, { tipo, status: "pendente", criadoEm: serverTimestamp() });
     acompanhar(ref, status);
   } catch (e) {
-    status.className = "erro";
+    status.className = "status erro";
     status.textContent = "Não foi possível enviar o comando. Confira as regras do Firestore.";
   }
 }
 
-function botao(texto, aoClicar, classe) {
-  const b = h("button", classe ? { class: classe } : {}, texto);
+function acao(icone, texto, aoClicar, classe) {
+  const b = h("button", { class: "acao" + (classe ? " " + classe : "") },
+    h("span", {}, icone), texto);
   b.onclick = aoClicar;
   return b;
 }
 
-async function cartaoAparelho(d, caixa) {
-  const dados = d.data();
-  const est = await lerEstado(d.id);
-  const status = h("p", {}, "");
+/* ---------- Seções ---------- */
 
-  const form = h("div", { class: "cartao" });
+async function telaInicio() {
+  const aparelhos = await carregarAparelhos();
+  const ultimo = aparelhos.reduce((m, a) => Math.max(m, ms(a.estado.ultimoContato)), 0);
+  const comLocal = aparelhos.filter((a) => a.estado.localizacaoPermitida).length;
+  const comApagar = aparelhos.filter((a) => a.estado.apagarHabilitado).length;
+
+  const irAparelhos = h("button", { class: "btn" }, "Ver aparelhos");
+  irAparelhos.onclick = () => {
+    secao = "aparelhos";
+    render(auth.currentUser);
+  };
+
+  const stat = (rotulo, valor) =>
+    h("div", { class: "cartao" }, h("small", { class: "muted" }, rotulo), h("div", { class: "stat-valor" }, valor));
+
+  const no = h("div", {},
+    h("h1", {}, "Painel de controle"),
+    h("p", { class: "muted" }, "Olá! Veja seus aparelhos vinculados."),
+    h("div", { class: "cartao hero" },
+      iconeEscudo(84, aparelhos.length ? "#22c55e" : "#f59e0b"),
+      h("div", {},
+        h("strong", {}, aparelhos.length
+          ? aparelhos.length + " aparelho(s) vinculado(s)"
+          : "Nenhum aparelho vinculado"),
+        h("p", { class: "muted" }, aparelhos.length
+          ? "Último contato: " + (ultimo ? new Date(ultimo).toLocaleString("pt-BR") : "sem registro")
+          : "No app, abra Dispositivos → Painel remoto, gere um código e vincule na aba Vincular."),
+        aparelhos.length ? irAparelhos : h("span", {}))),
+    h("div", { class: "stats" },
+      stat("Aparelhos", String(aparelhos.length)),
+      stat("Com localização permitida", comLocal + " de " + aparelhos.length),
+      stat("Com apagamento remoto habilitado", comApagar + " de " + aparelhos.length))
+  );
+  return no;
+}
+
+function cartaoAparelho(a) {
+  const est = a.estado;
+  const status = h("p", { class: "status" }, "");
+
+  const form = h("div", { class: "cartao interno" });
   form.hidden = true;
   const senhaCmd = h("input", { type: "password", autocomplete: "off" });
   const digitado = h("input", { autocomplete: "off", placeholder: "APAGAR" });
-  const confirmar = h("button", { class: "perigo" }, "Apagar este aparelho agora");
+  const confirmar = h("button", { class: "btn perigo" }, "Apagar este aparelho agora");
   confirmar.onclick = async () => {
-    status.className = "erro";
+    status.className = "status erro";
     if (digitado.value.trim() !== "APAGAR") {
       status.textContent = "Digite APAGAR para confirmar.";
       return;
     }
-    const atual = await lerEstado(d.id);
+    const atual = await lerEstado(a.id);
     if (!atual.apagarHabilitado) {
       status.textContent = "O apagamento remoto não está habilitado neste aparelho.";
       return;
@@ -211,7 +452,7 @@ async function cartaoAparelho(d, caixa) {
       return;
     }
     try {
-      const ref = doc(collection(db, "dispositivos", d.id, "comandos"));
+      const ref = doc(collection(db, "dispositivos", a.id, "comandos"));
       const prova = await calcularProva(senhaCmd.value, atual.saltComando, atual.desafio, ref.id);
       senhaCmd.value = "";
       digitado.value = "";
@@ -235,60 +476,55 @@ async function cartaoAparelho(d, caixa) {
     confirmar
   );
 
-  const apagar = botao("Apagar aparelho…", () => { form.hidden = !form.hidden; }, "perigo");
-  const remover = botao("Remover do painel", async () => {
+  const remover = h("button", { class: "btn sec" }, "Remover do painel");
+  remover.onclick = async () => {
     if (!confirm("Remover este aparelho do painel?")) return;
-    try { await deleteDoc(doc(db, "dispositivos", d.id, "estado", "atual")); } catch (e) {}
-    await deleteDoc(doc(db, "dispositivos", d.id));
-    carregarLista(caixa);
-  }, "sec");
-
-  const apagarTexto = est.apagarHabilitado
-    ? "Apagamento remoto: habilitado no aparelho"
-    : "Apagamento remoto: desligado no aparelho";
+    try { await deleteDoc(doc(db, "dispositivos", a.id, "estado", "atual")); } catch (e) {}
+    await deleteDoc(doc(db, "dispositivos", a.id));
+    render(auth.currentUser);
+  };
 
   return h("div", { class: "cartao" },
-    h("strong", {}, dados.nome || "Aparelho"),
-    h("div", {}, h("small", {},
-      "ID " + d.id.slice(0, 8) + " · Android " + (est.android || "?") +
-      " · último contato: " + quando(est.ultimoContato))),
-    h("div", {}, h("small", {},
-      "Localização: " + (est.localizacaoPermitida ? "permitida" : "não permitida") + " · " + apagarTexto)),
-    h("div", {},
-      botao("Bloquear cofre", () => enviar(d.id, "bloquear", status)),
-      botao("Encerrar sessões", () => enviar(d.id, "encerrar", status)),
-      botao("Localizar", () => enviar(d.id, "localizar", status)),
-      botao("Pedir backup", () => enviar(d.id, "pedir_backup", status))),
-    h("div", {}, apagar, remover),
+    h("div", { class: "topo" },
+      iconeEscudo(26),
+      h("div", {},
+        h("strong", {}, a.nome),
+        h("div", {}, h("small", { class: "muted" },
+          "ID " + a.id.slice(0, 8) + " · Android " + (est.android || "?") +
+          " · último contato: " + quando(est.ultimoContato))))),
+    h("div", { class: "chips" },
+      chip("Localização: " + (est.localizacaoPermitida ? "permitida" : "não permitida"),
+        est.localizacaoPermitida ? "verde" : "alerta"),
+      chip("Apagamento remoto: " + (est.apagarHabilitado ? "habilitado" : "desligado"),
+        est.apagarHabilitado ? "alerta" : "azul")),
+    h("div", { class: "grade" },
+      acao("🔒", "Bloquear cofre", () => enviar(a.id, "bloquear", status)),
+      acao("🚪", "Encerrar sessões", () => enviar(a.id, "encerrar", status)),
+      acao("📍", "Localizar", () => enviar(a.id, "localizar", status)),
+      acao("💾", "Pedir backup", () => enviar(a.id, "pedir_backup", status)),
+      acao("🗑️", "Apagar aparelho…", () => { form.hidden = !form.hidden; }, "perigo")),
     form,
-    status
+    status,
+    remover
   );
 }
 
-async function carregarLista(caixa) {
-  caixa.replaceChildren(h("small", {}, "Carregando…"));
-  try {
-    const snap = await getDocs(collection(db, "dispositivos"));
-    if (snap.empty) {
-      caixa.replaceChildren(h("small", {}, "Nenhum aparelho vinculado."));
-      return;
-    }
-    const itens = [];
-    for (const d of snap.docs) itens.push(await cartaoAparelho(d, caixa));
-    caixa.replaceChildren(...itens);
-  } catch (e) {
-    caixa.replaceChildren(h("p", { class: "erro" }, "Não foi possível carregar. Confira as regras do Firestore."));
+async function telaAparelhos() {
+  const aparelhos = await carregarAparelhos();
+  const no = h("div", {},
+    h("h1", {}, "Aparelhos"),
+    h("p", { class: "muted" }, "Controle seus aparelhos à distância."));
+  if (!aparelhos.length) {
+    no.append(h("p", { class: "muted" }, "Nenhum aparelho vinculado."));
   }
+  for (const a of aparelhos) no.append(cartaoAparelho(a));
+  return no;
 }
 
-function telaPainel(user) {
+function telaVincular(user) {
   const aviso = h("p", {}, "");
-  const caixa = h("div", {});
   const codigo = h("input", { autocomplete: "off", placeholder: "ABCD-EFGH" });
-  const vincular = h("button", {}, "Vincular aparelho");
-  const atualizar = h("button", { class: "sec" }, "Atualizar lista");
-  const sair = h("button", { class: "sec" }, "Sair");
-
+  const vincular = h("button", { class: "btn" }, "Vincular aparelho");
   vincular.onclick = async () => {
     const c = codigo.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
     aviso.className = "erro";
@@ -318,33 +554,58 @@ function telaPainel(user) {
       await deleteDoc(ref);
       codigo.value = "";
       aviso.className = "ok";
-      aviso.textContent = "Aparelho vinculado.";
-      carregarLista(caixa);
+      aviso.textContent = "Aparelho vinculado. Veja na aba Aparelhos.";
     } catch (e) {
       aviso.textContent = "Falha ao vincular. Confira as regras do Firestore.";
     }
   };
-  atualizar.onclick = () => carregarLista(caixa);
-  sair.onclick = () => signOut(auth);
-
-  mostrar(
-    h("h1", {}, "Painel do Cofre"),
+  return h("div", {},
+    h("h1", {}, "Vincular aparelho"),
+    h("p", { class: "muted" }, "No app: Dispositivos → Painel remoto → Conectar ao painel."),
     h("div", { class: "cartao" },
-      h("small", {}, "Conta: " + user.email),
-      h("br"),
-      h("small", { class: "mono" }, "UID: " + user.uid),
-      h("br"),
-      sair),
-    h("div", { class: "cartao" },
-      h("strong", {}, "Vincular aparelho"),
-      h("label", {}, "Código mostrado no app (Segurança → Painel remoto)"),
+      h("label", {}, "Código mostrado no app"),
       codigo, vincular, aviso),
-    h("h2", {}, "Aparelhos"),
-    atualizar,
-    caixa
+    h("div", { class: "cartao" },
+      h("small", { class: "muted" }, "Conta"),
+      h("div", {}, user.email),
+      h("small", { class: "muted mono" }, "UID: " + user.uid))
   );
-  carregarLista(caixa);
 }
+
+async function telaAtividade() {
+  const aparelhos = await carregarAparelhos();
+  const linhas = [];
+  for (const a of aparelhos) {
+    try {
+      const snap = await getDocs(query(
+        collection(db, "dispositivos", a.id, "comandos"),
+        orderBy("criadoEm", "desc"), limit(10)));
+      snap.forEach((d) => linhas.push({ aparelho: a.nome, ...d.data() }));
+    } catch (e) {
+      // sem permissão ou sem comandos: ignora
+    }
+  }
+  linhas.sort((x, y) => ms(y.criadoEm) - ms(x.criadoEm));
+
+  const no = h("div", {},
+    h("h1", {}, "Atividade"),
+    h("p", { class: "muted" }, "Comandos enviados recentemente."));
+  if (!linhas.length) no.append(h("p", { class: "muted" }, "Nenhum comando enviado ainda."));
+  for (const l of linhas.slice(0, 30)) {
+    no.append(
+      h("div", { class: "cartao linha" },
+        h("div", {},
+          h("strong", {}, ROTULOS[l.tipo] || String(l.tipo)),
+          h("div", {}, h("small", { class: "muted" },
+            l.aparelho + " · " + quando(l.criadoEm) +
+            (l.resultado ? " · " + resumo(l.resultado) : "")))),
+        seloStatus(l.status))
+    );
+  }
+  return no;
+}
+
+/* ---------- Início ---------- */
 
 onAuthStateChanged(auth, (user) => {
   if (!user) {
@@ -353,8 +614,9 @@ onAuthStateChanged(auth, (user) => {
     return;
   }
   reiniciarOcioso();
-  telaPainel(user);
+  secao = "inicio";
+  render(user);
 });
 </script>
 </body>
-  </html>
+</html>
